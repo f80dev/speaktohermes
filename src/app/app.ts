@@ -2,6 +2,17 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
+
+import { MatToolbarModule } from '@angular/material/toolbar';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatCardModule } from '@angular/material/card';
+import { MatInputModule } from '@angular/material/input';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatBadgeModule } from '@angular/material/badge';
+import { MatRippleModule } from '@angular/material/core';
+
 import { Subject, takeUntil } from 'rxjs';
 
 import { HermesService, HermesMessage } from './hermes.service';
@@ -10,7 +21,20 @@ import { VoiceService, RecordingState } from './voice.service';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, HttpClientModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    HttpClientModule,
+    MatToolbarModule,
+    MatButtonModule,
+    MatIconModule,
+    MatCardModule,
+    MatInputModule,
+    MatProgressSpinnerModule,
+    MatTooltipModule,
+    MatBadgeModule,
+    MatRippleModule,
+  ],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
@@ -22,7 +46,6 @@ export class AppComponent implements OnInit, OnDestroy {
   error = '';
   healthStatus: { hermes: any; stt: any } | null = null;
   sessionId: string | null = null;
-
   isSpeaking = false;
 
   private destroy$ = new Subject<void>();
@@ -33,7 +56,6 @@ export class AppComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    // Subscribe to conversation updates
     this.hermesService.conversation$
       .pipe(takeUntil(this.destroy$))
       .subscribe(history => {
@@ -41,14 +63,12 @@ export class AppComponent implements OnInit, OnDestroy {
         this.scrollToBottom();
       });
 
-    // Subscribe to recording state
     this.voiceService.state$
       .pipe(takeUntil(this.destroy$))
       .subscribe(state => {
         this.recordingState = state;
       });
 
-    // Check health on startup
     this.hermesService.checkHealth()
       .subscribe({
         next: status => this.healthStatus = status,
@@ -125,9 +145,8 @@ export class AppComponent implements OnInit, OnDestroy {
       });
   }
 
-  onKeySubmit(event: KeyboardEvent): void {
-    if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault();
+  onKeySubmit(): void {
+    if (this.currentText.trim()) {
       this.sendToHermes(this.currentText);
       this.currentText = '';
     }
@@ -153,12 +172,8 @@ export class AppComponent implements OnInit, OnDestroy {
     utterance.lang = 'fr-FR';
     utterance.rate = 1.1;
 
-    utterance.onend = () => {
-      this.isSpeaking = false;
-    };
-    utterance.onerror = () => {
-      this.isSpeaking = false;
-    };
+    utterance.onend = () => this.isSpeaking = false;
+    utterance.onerror = () => this.isSpeaking = false;
 
     this.isSpeaking = true;
     speechSynthesis.speak(utterance);
@@ -171,20 +186,19 @@ export class AppComponent implements OnInit, OnDestroy {
 
   // === UI Helpers ===
 
-  trackByIndex(index: number): number {
-    return index;
-  }
+  trackByIndex(index: number): number { return index; }
 
   private scrollToBottom(): void {
     setTimeout(() => {
-      const container = document.querySelector('.messages-container');
-      if (container) {
-        container.scrollTop = container.scrollHeight;
-      }
+      const container = document.querySelector('.messages-scroll');
+      if (container) container.scrollTop = container.scrollHeight;
     }, 50);
   }
 
   get recording() { return this.recordingState === 'recording'; }
   get processing() { return this.recordingState === 'processing'; }
   get idle() { return this.recordingState === 'idle'; }
+
+  get hermesHealthy() { return this.healthStatus?.hermes?.status === 'ok'; }
+  get sttHealthy() { return this.healthStatus?.stt?.status === 'ok'; }
 }
