@@ -1,0 +1,8 @@
+{
+  "/api/hermes": {
+    "target": "http://localhost:8642",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "info"
+  }
+}

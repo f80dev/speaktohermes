@@ -1,0 +1,144 @@
+<div class="app-container">
+  <!-- Header -->
+  <header class="header">
+    <div class="header-left">
+      <span class="logo">🎙️</span>
+      <h1>SpeakToHermes</h1>
+    </div>
+    <div class="header-right">
+      <button class="btn-new-session" (click)="startNewSession()" title="New session">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+          <path d="M3 3v5h5"/>
+        </svg>
+        New session
+      </button>
+      <div class="health-indicator" [class.healthy]="healthStatus?.hermes?.status === 'ok'">
+        <span class="dot"></span>
+        <span class="label">Hermes {{ healthStatus?.hermes?.status || '?' }}</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Error Banner -->
+  @if (error) {
+    <div class="error-banner">
+      <span>{{ error }}</span>
+      <button (click)="error = ''">✕</button>
+    </div>
+  }
+
+  <!-- Messages -->
+  <div class="messages-container">
+    @if (messages.length === 0) {
+      <div class="welcome">
+        <div class="welcome-icon">🎙️</div>
+        <h2>Speak to Hermes</h2>
+        <p>Click the microphone button and talk. Hermes will listen and respond in text.</p>
+        <p class="hint">You can also type your message and press Enter.</p>
+      </div>
+    }
+
+    @for (msg of messages; track trackByIndex($index)) {
+      <div class="message" [class.user]="msg.role === 'user'" [class.assistant]="msg.role === 'assistant'">
+        <div class="message-role">{{ msg.role === 'user' ? 'You' : 'Hermes' }}</div>
+        <div class="message-content">
+          <span class="text">{{ msg.content }}</span>
+          @if (msg.role === 'assistant') {
+            <button class="btn-speak" (click)="speakText(msg.content)" [title]="isSpeaking ? 'Stop' : 'Read aloud'">
+              @if (isSpeaking) {
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>
+                </svg>
+              } @else {
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+                </svg>
+              }
+            </button>
+          }
+        </div>
+      </div>
+    }
+
+    @if (isLoading) {
+      <div class="message assistant">
+        <div class="message-role">Hermes</div>
+        <div class="message-content loading">
+          <span class="thinking">
+            <span class="dot-flash">·</span><span class="dot-flash">·</span><span class="dot-flash">·</span>
+          </span>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Input Area -->
+  <div class="input-area">
+    <!-- Text input -->
+    <div class="text-input-row">
+      <input
+        type="text"
+        class="text-input"
+        placeholder="Type a message..."
+        [(ngModel)]="currentText"
+        (keydown)="onKeySubmit($event)"
+        [disabled]="isLoading"
+      />
+    </div>
+
+    <!-- Voice controls -->
+    <div class="voice-controls">
+      @if (idle) {
+        <button
+          class="btn-mic"
+          [class.loading]="isLoading"
+          [disabled]="isLoading || !healthStatus?.hermes"
+          (click)="startRecording()"
+          title="Start recording"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <line x1="12" y1="19" x2="12" y2="23"/>
+            <line x1="8" y1="23" x2="16" y2="23"/>
+          </svg>
+        </button>
+      }
+
+      @if (recording) {
+        <button class="btn-mic recording" (click)="stopAndTranscribe()" title="Stop and transcribe">
+          <div class="pulse-ring"></div>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+            <rect x="6" y="6" width="12" height="12" rx="2"/>
+          </svg>
+        </button>
+        <button class="btn-cancel" (click)="cancelRecording()" title="Cancel">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      }
+
+      @if (processing) {
+        <button class="btn-mic processing" disabled>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 6v6l4 2"/>
+          </svg>
+        </button>
+        <span class="processing-label">Transcribing...</span>
+      }
+    </div>
+  </div>
+
+  <!-- Session ID -->
+  @if (sessionId) {
+    <div class="session-info">
+      Session: {{ sessionId.slice(0, 8) }}...
+    </div>
+  }
+</div>
